@@ -13,7 +13,7 @@ public class Main extends Application {
 		try {
 //			Parent root = FXMLLoader.load(getClass().getResource("Main.fxml"));
 //			Scene scene = new Scene(root,800,600);
-			Parent root = FXMLLoader.load(getClass().getResource("AdminDashboard.fxml"));
+			Parent root = FXMLLoader.load(getClass().getResource("/application/admin/AdminDashboard.fxml"));
 			Scene scene = new Scene(root,1024,768);
 			scene.getStylesheets().add(getClass().getResource("application.css").toExternalForm());
 			primaryStage.setScene(scene);

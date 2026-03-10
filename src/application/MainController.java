@@ -18,11 +18,14 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.control.Label;
+import javafx.scene.control.TableCell;
 
 public class MainController{
 	
 	@FXML private Label totalCarsLabel;
 
+	@FXML private Label activeRentalsLabel;
+	
     @FXML
     private TextField txtUsername; // ต้องตรงกับ fx:id ใน Scene Builder
 
@@ -70,7 +73,7 @@ public class MainController{
  // 1. หน้า Dashboard
     @FXML
     public void switchToDashboard(ActionEvent event) throws IOException {
-        Parent root = FXMLLoader.load(getClass().getResource("AdminDashboard.fxml"));
+        Parent root = FXMLLoader.load(getClass().getResource("/application/admin/AdminDashboard.fxml"));
         Stage stage = (Stage)((Node)event.getSource()).getScene().getWindow();
         stage.setScene(new Scene(root));
         stage.show();
@@ -79,7 +82,7 @@ public class MainController{
     @FXML
     public void switchToInventory(ActionEvent event) throws IOException {
         // โหลดหน้า Inventory.fxml
-        Parent inventoryView = FXMLLoader.load(getClass().getResource("AdminInventory.fxml"));
+        Parent inventoryView = FXMLLoader.load(getClass().getResource("/application/admin/AdminInventory.fxml"));
         Scene inventoryScene = new Scene(inventoryView);
         
         // ดึงหน้าต่างปัจจุบัน (Stage) ออกมาแล้วเปลี่ยนหน้า
@@ -90,7 +93,7 @@ public class MainController{
  // 3. หน้า Booking/Rental
     @FXML
     public void switchToBookingRental(ActionEvent event) throws IOException {
-        Parent root = FXMLLoader.load(getClass().getResource("AdminBookingRental.fxml"));
+        Parent root = FXMLLoader.load(getClass().getResource("/application/admin/AdminBookingRental.fxml"));
         Stage stage = (Stage)((Node)event.getSource()).getScene().getWindow();
         stage.setScene(new Scene(root));
         stage.show();
@@ -99,7 +102,7 @@ public class MainController{
     // 4. หน้า Customers
     @FXML
     public void switchToCustomers(ActionEvent event) throws IOException {
-        Parent root = FXMLLoader.load(getClass().getResource("AdminCustomers.fxml"));
+        Parent root = FXMLLoader.load(getClass().getResource("/application/admin/AdminCustomers.fxml"));
         Stage stage = (Stage)((Node)event.getSource()).getScene().getWindow();
         stage.setScene(new Scene(root));
         stage.show();
@@ -108,7 +111,7 @@ public class MainController{
     // 5. หน้า Reports
     @FXML
     public void switchToReports(ActionEvent event) throws IOException {
-        Parent root = FXMLLoader.load(getClass().getResource("AdminReports.fxml"));
+        Parent root = FXMLLoader.load(getClass().getResource("/application/admin/AdminReports.fxml"));
         Stage stage = (Stage)((Node)event.getSource()).getScene().getWindow();
         stage.setScene(new Scene(root));
         stage.show();
@@ -123,10 +126,35 @@ public class MainController{
             colType.setCellValueFactory(new PropertyValueFactory<>("type"));
             colPrice.setCellValueFactory(new PropertyValueFactory<>("price"));
             colStatus.setCellValueFactory(new PropertyValueFactory<>("status"));
+            colStatus.setCellFactory(column -> {
+                return new TableCell<Car, String>() { // ตรวจสอบว่า Car ตัวใหญ่ตรงกับชื่อ Class ของคุณ
+                    @Override
+                    protected void updateItem(String item, boolean empty) {
+                        super.updateItem(item, empty);
+
+                        if (item == null || empty) {
+                            setText(null);
+                            setStyle(""); 
+                        } else {
+                            setText(item);
+                            // เช็คเงื่อนไขสี
+                            if (item.equalsIgnoreCase("Available")) {
+                                setStyle("-fx-text-fill: #2ecc71; -fx-font-weight: bold;");
+                            } else if (item.equalsIgnoreCase("Rented")) {
+                                setStyle("-fx-text-fill: #e74c3c; -fx-font-weight: bold;");
+                            } else if (item.equalsIgnoreCase("Maintenance")) {
+                                setStyle("-fx-text-fill: #f1c40f; -fx-font-weight: bold;");
+                            } else {
+                                setStyle("-fx-text-fill: white;");
+                            }
+                        }
+                    }
+                }; // ต้องปิดด้วย }; และวงเล็บปิดของ setCellFactory
+            });
             colCustomer.setCellValueFactory(new PropertyValueFactory<>("customer"));
 
             ObservableList<Car> carList = FXCollections.observableArrayList(
-                new Car("1", "Toyota Camry", "กข-123", "Sedan", "1,500", "Available", "Suthema Pasa"),
+                new Car("1", "Toyota Camry", "กข-123", "Sedan", "1,500", "Rented", "Suthema Pasa"),
                 new Car("2", "Honda Civic", "ชล-999", "Sedan", "1,200", "Rented", "Suriya Nakkhasen"),
                 new Car("3", "Tesla Model 3", "EV-001", "Electric", "3,000", "Available", "Phumiphat Hem"),
                 new Car("4", "Mater", "ขก-56", "Tow Truck", "2,000", "Available", "Nadthakorn srichon")
@@ -137,6 +165,35 @@ public class MainController{
                 int count = carList.size(); 
                 totalCarsLabel.setText(String.valueOf(count));
             }
+         // นับจำนวนรถที่มี Status เป็น "Rented" เท่านั้น
+            if (activeRentalsLabel != null) {
+            long rentedCount = carList.stream()
+                                      .filter(car -> "Rented".equalsIgnoreCase(car.getStatus()))
+                                      .count();
+
+            // แสดงผลบนหน้าจอ
+            activeRentalsLabel.setText(String.valueOf(rentedCount));
+            }
+            updateDashboard(carList);
+        }
+    }
+    private void updateDashboard(ObservableList<Car> list) {
+        // 1. จำนวนรถทั้งหมด (ใช้สีขาวหรือสีม่วงอ่อนตามธีม Dashboard)
+        if (totalCarsLabel != null) {
+            totalCarsLabel.setText(String.valueOf(list.size()));
+            totalCarsLabel.setStyle("-fx-text-fill: white; -fx-font-weight: bold;"); 
+        }
+
+        // 2. จำนวนรถที่ถูกเช่า (Active Rentals)
+        if (activeRentalsLabel != null) {
+            long rentedCount = list.stream()
+                .filter(car -> "Rented".equalsIgnoreCase(car.getStatus()))
+                .count();
+            
+            activeRentalsLabel.setText(String.valueOf(rentedCount));
+            
+            // [ปรับสีที่นี่] ใช้สีแดง (#e74c3c) ให้เหมือนกับคำว่า Rented ในตาราง
+            activeRentalsLabel.setStyle("-fx-text-fill: #e74c3c; -fx-font-weight: bold;");
         }
     }
 }
